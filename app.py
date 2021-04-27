@@ -123,15 +123,16 @@ def addUserToGroup():
 @app.route('/createNote', methods=['POST'])
 def createNote():
     adminId = request.form["adminId"] if request.form.get("adminId") else None
-    gId = request.form["gId"] if request.form.get("gId") else None
     name = request.form["name"] if request.form.get("name") else None
     description = request.form["description"] if request.form.get("description") else None
     message = request.form["message"] if request.form.get("message") else None
     profile = request.form["profile"] if request.form.get("profile") else None
 
-    if gId and adminId and name and description:
+    if adminId and name and description:
         dbUser = db.users.find_one({"userId": adminId})
         if dbUser:
+            gId = dbUser["userName"][0:2].upper() + name[0: 2].upper() + createRandomCode().upper() + \
+                  adminId[1: 4].upper()
             dbGroupList = db.groupList.find({"adminId": adminId})
             if dbGroupList.count() < dbUser["groupLimit"]:
                 if db.groupList.find_one({"gId": gId}) is None:
