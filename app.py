@@ -182,6 +182,8 @@ def updateUser():
         user["userId"] = dbUser["userId"]
         user["shareId"] = dbUser["shareId"]
         user["groupLimit"] = groupLimit if groupLimit else dbUser["groupLimit"]
+        if dbUser.get("groups"):
+            user["groups"] = dbUser["groups"]
         if profileUrl is not None or dbUser.get("profileUrl"):
             user["profileUrl"] = profileUrl if profileUrl else dbUser["profileUrl"]
         db.users.update({'userId': userId}, user)
