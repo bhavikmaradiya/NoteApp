@@ -71,30 +71,53 @@ def createRandomCode():
     return string
 
 
+@app.route('/restrictUser', methods=['POST'])
+def restrictUserFromGroup():
+    gId = request.form["gId"] if request.form.get("gId") else None
+    userId = request.form["userId"] if request.form.get("userId") else None
+    restrict = request.form["restrict"] if request.form.get("restrict") else None
+    if gId and userId and restrict:
+        db.groupList.update({
+            'gId': gId,
+            'users.id': userId
+        }, {
+            "$set": {"users.$.restrict": True if restrict.lower() == "true" else False}
+        })
+        return json.dumps({"status": 1, "message": "User restriction changed"})
+    else:
+        return json.dumps({"status": 0, "message": "All fields are required"})
+
+
 @app.route('/addUserToGroup', methods=['POST'])
 def addUserToGroup():
     gId = request.form["gId"] if request.form.get("gId") else None
     shareId = request.form["shareId"] if request.form.get("shareId") else None
-    dbUser = db.users.find_one({"shareId": shareId})
-    dbGroup = db.groupList.find_one({"gId": gId})
-    if dbUser and dbGroup:
-        if db.groupList.find_one({"gId": gId, "users.id": dbUser['userId']}) is None:
-            db.groupList.update({'gId': gId}, {
-                "$addToSet": {
-                    "users": {
-                        "id": dbUser['userId'],
-                        "restrict": False
+    if gId and shareId:
+        dbUser = db.users.find_one({"shareId": shareId})
+        dbGroup = db.groupList.find_one({"gId": gId})
+        if dbUser and dbGroup:
+            if db.groupList.find_one({"gId": gId, "users.id": dbUser['userId']}) is None:
+                db.groupList.update({'gId': gId}, {
+                    "$addToSet": {
+                        "users": {
+                            "id": dbUser['userId'],
+                            "restrict": False
+                        }
                     }
-                }
-            })
-        if db.users.find_one({"userId": dbUser['userId'], "groups.gId": gId}) is None:
-            db.users.update({'userId': dbUser['userId']}, {
-                "$addToSet": {
-                    "groups": {
-                        "gId": gId
+                })
+            if db.users.find_one({"userId": dbUser['userId'], "groups.gId": gId}) is None:
+                db.users.update({'userId': dbUser['userId']}, {
+                    "$addToSet": {
+                        "groups": {
+                            "gId": gId
+                        }
                     }
-                }
-            })
+                })
+            return json.dumps({"status": 1, "message": "User added successfully"})
+        else:
+            return json.dumps({"status": 0, "message": "Something went wrong"})
+    else:
+        return json.dumps({"status": 0, "message": "All fields are required"})
 
 
 @app.route('/createNote', methods=['POST'])
@@ -135,9 +158,9 @@ def createNote():
                             }
                         }
                     })
-                    json.dumps({"status": 1, "message": "Group created successfully"})
+                    return json.dumps({"status": 1, "message": "Group created successfully"})
                 else:
-                    json.dumps({"status": 0, "message": "Already created"})
+                    return json.dumps({"status": 0, "message": "Already created"})
             elif dbGroupList.count() == dbUser["groupLimit"] or dbGroupList.count() > dbUser["groupLimit"]:
                 return json.dumps({"status": 0, "message": "You are reached group limit"})
 
