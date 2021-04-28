@@ -41,6 +41,37 @@ def getUsers():
     return json.dumps(res, default=str)
 
 
+@app.route('/getGroup/<gId>', methods=['GET'])
+def getGroupById(gId):
+    group1 = db.groupList.find_one({"gId": gId})
+    if group1:
+        group = {}
+        usersResponse = []
+        group["adminId"] = group1["adminId"]
+        group["description"] = group1["description"]
+        group["gId"] = group1["gId"]
+        group["message"] = group1["message"]
+        group["name"] = group1["name"]
+        if group1.get("users"):
+            for user1 in group1["users"]:
+                user = {"restrict": user1["restrict"],
+                        "isAdmin": True if group1["adminId"] == user1["id"] else False}
+                dbUser = db.users.find_one({"userId": user1["id"]})
+                if dbUser:
+                    user["emailId"] = dbUser["emailId"]
+                    user["groupLimit"] = dbUser["groupLimit"]
+                    user["profileUrl"] = dbUser["profileUrl"]
+                    user["shareId"] = dbUser["shareId"]
+                    user["userId"] = dbUser["userId"]
+                    user["userName"] = dbUser["userName"]
+                    usersResponse.append(user)
+            group["users"] = usersResponse
+        res = {"status": 1, "group": group}
+        return json.dumps(res, default=str)
+    else:
+        return json.dumps({"status": 0, "group": {}})
+
+
 @app.route('/getUsersOfGroup/<gId>', methods=['GET'])
 def getUsersOfGroup(gId):
     usersResponse = []
