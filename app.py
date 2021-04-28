@@ -3,11 +3,22 @@ import random
 
 from flask import Flask
 from flask import request
-from pymongo import MongoClient
+from flask_pymongo import PyMongo
 
 app = Flask(__name__)
 
-db = MongoClient("mongodb://127.0.0.1:27017").NoteApp
+app.config[
+    "MONGO_URI"] = "mongodb://bhavik:bhavik@cluster0-shard-00-00.00r7b.mongodb.net:27017,cluster0-shard-00-01.00r7b.mongodb.net:27017,cluster0-shard-00-02.00r7b.mongodb.net:27017/NoteApp?ssl=true&replicaSet=atlas-m3cw34-shard-0&authSource=admin&retryWrites=true&w=majority"
+# client = MongoClient("mongodb://bhavik:bhavik@cluster0-shard-00-00.00r7b.mongodb.net:27017,cluster0-shard-00-01.00r7b.mongodb.net:27017,cluster0-shard-00-02.00r7b.mongodb.net:27017/NoteApp?ssl=true&replicaSet=atlas-m3cw34-shard-0&authSource=admin&retryWrites=true&w=majority")
+db = PyMongo(app).db
+
+
+# db = MongoClient("mongodb://127.0.0.1:27017").NoteApp
+
+
+@app.route('/')
+def home():
+    return "Hello world"
 
 
 @app.route('/getUsers', methods=['GET'])
@@ -356,4 +367,4 @@ def getUserById(uId):
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=5000, host="0.0.0.0", debug=False)
