@@ -77,13 +77,16 @@ def restrictUserFromGroup():
     userId = request.form["userId"] if request.form.get("userId") else None
     restrict = request.form["restrict"] if request.form.get("restrict") else None
     if gId and userId and restrict:
-        db.groupList.update({
-            'gId': gId,
-            'users.id': userId
-        }, {
-            "$set": {"users.$.restrict": True if restrict.lower() == "true" else False}
-        })
-        return json.dumps({"status": 1, "message": "User restriction changed"})
+        if db.groupList.find_one({"gId": gId, "users.id": userId}):
+            db.groupList.update({
+                'gId': gId,
+                'users.id': userId
+            }, {
+                "$set": {"users.$.restrict": True if restrict.lower() == "true" else False}
+            })
+            return json.dumps({"status": 1, "message": "User restriction changed"})
+        else:
+            return json.dumps({"status": 0, "message": "Something went wrong"})
     else:
         return json.dumps({"status": 0, "message": "All fields are required"})
 
