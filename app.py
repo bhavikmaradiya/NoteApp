@@ -3,17 +3,17 @@ import random
 
 from flask import Flask
 from flask import request
-from flask_pymongo import PyMongo
+from pymongo import MongoClient
 
 app = Flask(__name__)
 
-app.config[
-    "MONGO_URI"] = "mongodb://bhavik:bhavik@cluster0-shard-00-00.00r7b.mongodb.net:27017,cluster0-shard-00-01.00r7b.mongodb.net:27017,cluster0-shard-00-02.00r7b.mongodb.net:27017/NoteApp?ssl=true&replicaSet=atlas-m3cw34-shard-0&authSource=admin&retryWrites=true&w=majority"
-# client = MongoClient("mongodb://bhavik:bhavik@cluster0-shard-00-00.00r7b.mongodb.net:27017,cluster0-shard-00-01.00r7b.mongodb.net:27017,cluster0-shard-00-02.00r7b.mongodb.net:27017/NoteApp?ssl=true&replicaSet=atlas-m3cw34-shard-0&authSource=admin&retryWrites=true&w=majority")
-db = PyMongo(app).db
+# app.config[
+#     "MONGO_URI"] = "mongodb://bhavik:bhavik@cluster0-shard-00-00.00r7b.mongodb.net:27017,cluster0-shard-00-01.00r7b.mongodb.net:27017,cluster0-shard-00-02.00r7b.mongodb.net:27017/NoteApp?ssl=true&replicaSet=atlas-m3cw34-shard-0&authSource=admin&retryWrites=true&w=majority"
+# # client = MongoClient("mongodb://bhavik:bhavik@cluster0-shard-00-00.00r7b.mongodb.net:27017,cluster0-shard-00-01.00r7b.mongodb.net:27017,cluster0-shard-00-02.00r7b.mongodb.net:27017/NoteApp?ssl=true&replicaSet=atlas-m3cw34-shard-0&authSource=admin&retryWrites=true&w=majority")
+# db = PyMongo(app).db
 
 
-# db = MongoClient("mongodb://127.0.0.1:27017").NoteApp
+db = MongoClient("mongodb://127.0.0.1:27017").NoteApp
 
 
 @app.route('/')
@@ -33,12 +33,14 @@ def getUsers():
             for group in user1["groups"]:
                 group1 = db.groupList.find_one({"gId": group["gId"]})
                 if group1:
+                    dbUser = db.users.find_one({"userId": group1["adminId"]})
                     groups.append({
-                        "adminId": group1["adminId"],
+                        "admin": dbUser["userName"] if dbUser else "",
                         "description": group1["description"],
                         "gId": group1["gId"],
                         "message": group1["message"],
-                        "name": group1["name"]
+                        "name": group1["name"],
+                        "image": group1["profile"] if group1.get("profile") else ""
                     })
             user["groups"] = groups
         user["emailId"] = user1["emailId"]
@@ -58,11 +60,16 @@ def getGroupById(gId):
     if group1:
         group = {}
         usersResponse = []
-        group["adminId"] = group1["adminId"]
+
         group["description"] = group1["description"]
         group["gId"] = group1["gId"]
         group["message"] = group1["message"]
         group["name"] = group1["name"]
+
+        dbUser = db.users.find_one({"userId": group1["adminId"]})
+        group["admin"] = dbUser["userName"] if dbUser else "",
+        group["image"] = group1["profile"] if group1.get("profile") else ""
+
         if group1.get("users"):
             for user1 in group1["users"]:
                 user = {"restrict": user1["restrict"],
@@ -345,12 +352,14 @@ def getUserById(uId):
             for group in user1["groups"]:
                 group1 = db.groupList.find_one({"gId": group["gId"]})
                 if group1:
+                    dbUser = db.users.find_one({"userId": group1["adminId"]})
                     groups.append({
-                        "adminId": group1["adminId"],
+                        "admin": dbUser["userName"] if dbUser else "",
                         "description": group1["description"],
                         "gId": group1["gId"],
                         "message": group1["message"],
-                        "name": group1["name"]
+                        "name": group1["name"],
+                        "image": group1["profile"] if group1.get("profile") else ""
                     })
             user["groups"] = groups
         user["emailId"] = user1["emailId"]
@@ -359,7 +368,9 @@ def getUserById(uId):
         user["shareId"] = user1["shareId"]
         user["userId"] = user1["userId"]
         user["userName"] = user1["userName"]
-        response["user"] = user
+        users = []
+        users.append(user)
+        response["user"] = users
         return json.dumps(response, default=str)
     else:
         response["status"] = 0
